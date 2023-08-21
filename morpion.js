@@ -10,13 +10,81 @@ class Morpion {
 		[null, null, null],
 	];
 
+    history = []
+
 	constructor(firstPlayer = 'J1') {
 		this.humanPlayer = firstPlayer;
 		this.iaPlayer = (firstPlayer === 'J1') ? 'J2' : 'J1';
 		this.initGame();
 	}
 
+    undo = () => {
+        const lastDrawNumber = this.turn;
+
+        // undo AI move
+        const lastAiDraw = this.history[lastDrawNumber - 1];
+        const [aiX, aiY, aiPlayer] = lastAiDraw;
+        this.getCell(aiX, aiY).classList.remove(`filled-${aiPlayer}`);
+        this.gridMap[aiY][aiX] = null;
+
+        // undo Human move
+        const lastHumanDraw = this.history[lastDrawNumber - 2];
+        const [humanX, humanY, humanPlayer] = lastHumanDraw;
+        this.getCell(humanX, humanY).classList.remove(`filled-${humanPlayer}`);
+        this.gridMap[humanY][humanX] = null;
+
+
+        this.gameOver = false;
+        this.checkWinner(null);
+        const endMessageElement = document.getElementById('end-message');
+		endMessageElement.style.display = 'none';
+
+        this.turn -= 2;
+    }
+
+    redo = () => {
+        console.log("redo");
+        console.log(this.history);
+        console.log(`historique des coups : ${this.history.length}`);
+        console.log(`numéro du coup : ${this.turn}`);
+
+        const nextDrawNumber = this.turn;
+
+        if (nextDrawNumber < this.history.length) {
+
+            //redo human move
+            const nextHumanDraw = this.history[nextDrawNumber];
+            const [humanX, humanY, humanPlayer] = nextHumanDraw;
+            this.getCell(humanX, humanY).classList.add(`filled-${humanPlayer}`);
+            this.gridMap[humanY][humanX] = humanPlayer;
+            this.checkWinner(humanPlayer);
+
+
+            //redo ai move
+            const nextAiDraw = this.history[nextDrawNumber+1];
+            const [AiX, AiY, AiPlayer] = nextAiDraw;
+            this.getCell(AiX, AiY).classList.add(`filled-${AiPlayer}`);
+            this.gridMap[AiY][AiX] = AiPlayer;
+            this.checkWinner(AiPlayer)
+
+            this.turn += 2;
+
+        }
+    }
+
+
 	initGame = () => {
+        const endMessageElement = document.getElementById('end-message');
+        const radioButtons = document.getElementsByName("radio");
+
+        this.displayEndMessage("Choisissez un niveau")
+
+        for (const radioButton of radioButtons) {
+            radioButton.addEventListener("change", () => {
+                endMessageElement.style.display = 'none';
+            });
+        }
+
 		this.gridMap.forEach((line, y) => {
 			line.forEach((cell, x) => {
 				this.getCell(x, y).onclick = () => {
@@ -28,7 +96,8 @@ class Morpion {
 		if (this.iaPlayer === 'J1') {
 			this.doPlayIa();
 		}
-	}
+
+    }
 
 	getCell = (x, y) => {
 		const column = x + 1;
@@ -106,24 +175,60 @@ class Morpion {
 			return false;
 		}
 
+        if (this.history[this.turn] === null) {
+            this.history.push([x,y,player])
+        } else {
+            this.history[this.turn] = [x, y, player]
+        }
+
 		this.gridMap[y][x] = player;
         this.turn += 1;
 		this.getCell(x, y).classList.add(`filled-${player}`);
 		this.checkWinner(player);
+        console.log(this.history)
+
 		return true;
 	}
 
 	doPlayHuman = (x, y) => {
+        const radioButtons = document.getElementsByName("radio");
 		if (this.gameOver) {
 			return;
 		}
 
 		if (this.drawHit(x, y, this.humanPlayer)) {
-			this.doPlayIa();
+            if (radioButtons[0].checked) {
+			    this.doPlayIaLevel1();
+            } else if (radioButtons[1].checked){
+                this.doPlayIaLevel2();
+            } else if (radioButtons[2].checked){
+                this.doPlayIaLevel3();
+            }
 		}
 	}
 
-	doPlayIa = () => {
+    doPlayIaLevel1 = () => {
+        if (this.gameOver) {
+            return;
+        }
+
+        let x, y;
+        do {
+            x = Math.floor(Math.random() * 3);
+            y = Math.floor(Math.random() * 3);
+        } while (this.gridMap[y][x] !== null);
+
+        this.drawHit(x, y, this.iaPlayer);
+    }
+
+    doPlayIaLevel2 = () => {
+        if (this.gameOver) {
+            return;
+        }
+    }
+
+
+    doPlayIaLevel3 = () => {
 		if (this.gameOver) {
 			return;
 		}
@@ -164,11 +269,11 @@ class Morpion {
         };
 
         // This tree is going to test every move still possible in game
-        // and suppose that the 2 players will always play there best move.
+        // and suppose that the 2 players will always play their best move.
         // The IA search for its best move by testing every combinations,
         // and affects score to every node of the tree.
         if (isMaximizing) {
-            // The higher is the score, the better is the move for the IA.
+            // The higher the score, the better is the move for the IA.
             let bestIaScore = -Infinity;
             let optimalMove;
             for (const y of [0, 1, 2]) {

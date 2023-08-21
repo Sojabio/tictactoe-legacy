@@ -9,6 +9,11 @@
     </head>
     <body>
         <h1 class="title">The Hacking Morpion</h1>
+        <section >
+            <input type="radio" name="radio">niveau 1</input>
+            <input type="radio" name="radio">niveau 2</input>
+            <input type="radio" name="radio">niveau 3</input>
+        </section>
         <section class="game-grid">
             <div class="cell" id="A1"></div>
             <div class="cell" id="A2"></div>
@@ -24,6 +29,10 @@
         </section>
         <section class="actions">
             <a class="replay-button" href="./index.html">Rejouer</a>
+        </section>
+        <section class="actions">
+            <button id="undo-button"> << </button>
+            <button id="redo-button"> >> </button>
         </section>
         <div class="end-message" id="end-message"></div>
         <script src="./morpion.js"></script>
